@@ -235,7 +235,8 @@ If you encounter any issues or have questions:
 
 ## Author
 
-Your Name - [@yourhandle](https://github.com/yourhandle)
+Maksim - [@GofMan5](https://github.com/GofMan5)
+tg - @GofMan5
 
 ## Acknowledgments
 
