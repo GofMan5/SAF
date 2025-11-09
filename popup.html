@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAF</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">💳</div>
+      <h2>SAF</h2>
+      <div class="version">v1.0</div>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="general">
+        <span class="tab-icon">⚡</span>
+        <span>General</span>
+      </button>
+      <button class="tab-btn" data-tab="binlist">
+        <span class="tab-icon">💎</span>
+        <span>BIN List</span>
+      </button>
+      <button class="tab-btn" data-tab="settings">
+        <span class="tab-icon">⚙️</span>
+        <span>Settings</span>
+      </button>
+    </div>
+    
+    <div class="content">
+      <!-- General Tab -->
+      <div id="general-tab" class="tab-content active">
+        <div class="section">
+          <div class="section-header">
+            <span class="section-icon">💳</span>
+            <h3>Card Generator</h3>
+          </div>
+          
+          <div class="input-group">
+            <label for="binInput">BIN Template:</label>
+            <div class="input-with-btn">
+              <input type="text" id="binInput" placeholder="Enter BIN (e.g. 552461)" maxlength="19">
+              <button id="addBinBtn" class="icon-btn" title="Save to history">
+                <span>+</span>
+              </button>
+              <button id="settingsToggleBtn" class="icon-btn settings-btn" title="Settings">
+                <span>⚙️</span>
+              </button>
+            </div>
+            
+            <!-- Mini settings dropdown -->
+            <div id="miniSettings" class="mini-settings">
+              <div class="mini-settings-item">
+                <label class="mini-checkbox-label">
+                  <input type="checkbox" id="useLuhnValidation" checked>
+                  <span class="mini-checkbox-custom"></span>
+                  <span class="mini-checkbox-text">Card Validation</span>
+                </label>
+              </div>
+              
+              <div class="mini-settings-divider"></div>
+              
+              <div class="mini-settings-item">
+                <div class="mini-settings-label">🏠 Address Source:</div>
+                <select id="addressSourceSelect" class="mini-select">
+                  <option value="static">Static (Built-in)</option>
+                  <option value="manual">Manual (Custom)</option>
+                  <option value="auto" disabled>Auto (Coming Soon)</option>
+                </select>
+              </div>
+              
+              <div class="mini-settings-item">
+                <div class="mini-settings-label">👤 Name Source:</div>
+                <select id="nameSourceSelect" class="mini-select">
+                  <option value="static">Static (Built-in)</option>
+                  <option value="manual">Manual (Custom)</option>
+                  <option value="auto" disabled>Auto (Coming Soon)</option>
+                </select>
+                <div class="mini-settings-hint">Names are taken from addresses</div>
+              </div>
+            </div>
+            
+            <small style="color: var(--text-muted); font-size: 12px; margin-top: 4px; display: block;">
+              Auto-fills with 'x' to 16 digits • Max 19 digits for long cards
+            </small>
+          </div>
+          
+          <button id="generateCardsBtn" class="btn btn-primary">
+            <span class="btn-icon">🚀</span>
+            <span>Fill Everything</span>
+          </button>
+          
+          <div class="status-message" id="statusMessage"></div>
+        </div>
+        
+        <div class="section">
+          <div class="section-header">
+            <span class="section-icon">📜</span>
+            <h3>History</h3>
+          </div>
+          <div id="binHistoryList" class="history-list"></div>
+        </div>
+      </div>
+      
+      <!-- BIN List Tab -->
+      <div id="binlist-tab" class="tab-content">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 400px; gap: 16px;">
+          <div style="font-size: 72px; opacity: 0.3;">💎</div>
+          <div style="font-size: 32px; font-weight: 600; color: var(--text-primary);">Soon</div>
+          <div style="font-size: 14px; color: var(--text-secondary); text-align: center; max-width: 300px;">
+            BIN List database coming in future updates
+          </div>
+        </div>
+      </div>
+      
+      <!-- Settings Tab -->
+      <div id="settings-tab" class="tab-content">
+        <div class="sub-tabs">
+          <button class="sub-tab-btn active" data-subtab="addresses">
+            <span>🏠 Addresses</span>
+          </button>
+          <button class="sub-tab-btn" data-subtab="names">
+            <span>👤 Names</span>
+          </button>
+        </div>
+        
+        <!-- Addresses SubTab -->
+        <div id="addresses-subtab" class="sub-tab-content active">
+          <div class="form-group-compact">
+            <input type="text" id="nameInput" placeholder="Full Name" class="form-input">
+            <input type="text" id="address1Input" placeholder="Address Line 1" class="form-input">
+            <input type="text" id="address2Input" placeholder="Address Line 2 (optional)" class="form-input">
+            <div class="input-row">
+              <input type="text" id="cityInput" placeholder="City" class="form-input">
+              <input type="text" id="stateInput" placeholder="State" class="form-input">
+            </div>
+            <input type="text" id="zipInput" placeholder="ZIP Code" class="form-input">
+            <button id="addAddressBtn" class="btn btn-secondary btn-sm">
+              <span class="btn-icon">+</span>
+              <span>Add</span>
+            </button>
+          </div>
+          
+          <div class="list-container-compact">
+            <div id="addressesList"></div>
+          </div>
+        </div>
+        
+        <!-- Names SubTab -->
+        <div id="names-subtab" class="sub-tab-content">
+          <div class="form-group-compact">
+            <div class="input-row">
+              <input type="text" id="firstNameInput" placeholder="First Name" class="form-input">
+              <input type="text" id="lastNameInput" placeholder="Last Name" class="form-input">
+            </div>
+            <button id="addNameBtn" class="btn btn-secondary btn-sm">
+              <span class="btn-icon">+</span>
+              <span>Add</span>
+            </button>
+          </div>
+          
+          <div class="list-container-compact">
+            <div id="namesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

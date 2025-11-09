@@ -1,0 +1,48 @@
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS Files
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Extension Build Files
+*.zip
+*.crx
+*.pem
+
+# Temporary Files
+*.tmp
+*.temp
+.cache/
+
+# Node modules (if added in future)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Test Files
+test-results/
+coverage/
+
+# Private Keys and Certificates
+*.key
+*.pem
+*.p12
+secrets.json
+
+# Environment Files
+.env
+.env.local
+.env.*.local
+

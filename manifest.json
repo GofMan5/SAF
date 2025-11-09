@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "SAF - Stripe Auto Fill",
+  "version": "1.0.0",
+  "description": "SAF",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "scripting",
+    "cookies",
+    "browsingData"
+  ],
+  "host_permissions": [
+    "https://checkout.stripe.com/*",
+    "https://stripe.com/*",
+    "https://*.stripe.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://checkout.stripe.com/*",
+        "https://stripe.com/*",
+        "https://*.stripe.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}
+
