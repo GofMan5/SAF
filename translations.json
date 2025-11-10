@@ -1,0 +1,206 @@
+{
+  "en": {
+    "header": {
+      "title": "SAF",
+      "version": "v1.2"
+    },
+    "tabs": {
+      "general": "General",
+      "ipBlocker": "IP Blocker",
+      "settings": "Settings"
+    },
+    "subTabs": {
+      "stripe": "Stripe",
+      "cursor": "Cursor AI",
+      "addresses": "Addresses",
+      "names": "Names"
+    },
+    "general": {
+      "cardGenerator": "Card Generator",
+      "binTemplate": "BIN Template:",
+      "binPlaceholder": "Enter BIN (e.g. 552461)",
+      "generate": "Generate",
+      "generateCards": "Generate Cards",
+      "autofill": "Auto-fill Form",
+      "clearData": "Clear Stripe Data",
+      "history": "History",
+      "settings": "Settings",
+      "dataSource": "Data Source:",
+      "static": "Static",
+      "manual": "Manual",
+      "auto": "Auto",
+      "luhnValidation": "Use Luhn Validation",
+      "cardValidation": "Use Luhn Validation",
+      "noHistory": "No history yet"
+    },
+    "cursor": {
+      "status": "In Development"
+    },
+    "ipBlocker": {
+      "title": "IP Blocker - 3DS Challenge",
+      "currentIP": "Current IP:",
+      "status": "Status:",
+      "statusActive": "Active",
+      "statusBlocked": "Blocked",
+      "statusNotTracked": "Not tracked",
+      "loading": "Loading...",
+      "error": "Error",
+      "refresh": "Refresh",
+      "blockedIPs": "Blocked IPs",
+      "noBlockedIPs": "No blocked IPs",
+      "removeIP": "Remove from blocklist",
+      "confirmRemove": "Remove IP {ip} from blocklist?",
+      "ipBlocked": "IP blocked: {ip}",
+      "ipRemoved": "IP removed",
+      "ipAlreadyBlocked": "IP already blocked",
+      "ipAlreadyInList": "IP already in blocklist: {ip}",
+      "failedToFetch": "Failed to fetch IP address",
+      "errorFetchingIP": "Error fetching IP: {error}",
+      "ipDataRefreshed": "IP data refreshed",
+      "reason3DS": "3DS Challenge Auto-detected"
+    },
+    "settings": {
+      "stripeSettings": "Stripe Settings",
+      "cursorSettings": "Cursor AI Settings",
+      "addresses": "Addresses",
+      "names": "Names",
+      "fullName": "Full Name",
+      "addressLine1": "Address Line 1",
+      "addressLine2": "Address Line 2 (optional)",
+      "city": "City",
+      "state": "State",
+      "zipCode": "ZIP Code",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "add": "Add",
+      "delete": "Delete",
+      "noAddresses": "No addresses saved yet",
+      "noNames": "No names saved yet"
+    },
+    "themes": {
+      "dark": "Dark",
+      "light": "Light",
+      "galaxy": "Galaxy",
+      "sky": "Sky",
+      "underground": "Underground"
+    },
+    "toast": {
+      "themeDark": "Theme: Dark",
+      "themeLight": "Theme: Light",
+      "themeGalaxy": "Theme: Galaxy",
+      "themeSky": "Theme: Sky",
+      "themeUnderground": "Theme: Underground",
+      "languageEnglish": "Language: English 🇺🇸",
+      "languageRussian": "Language: Russian 🇷🇺"
+    },
+    "tooltips": {
+      "toggleTheme": "Toggle theme",
+      "switchToRussian": "Switch to Russian",
+      "switchToEnglish": "Switch to English",
+      "saveToHistory": "Save to history",
+      "settings": "Settings"
+    }
+  },
+  "ru": {
+    "header": {
+      "title": "SAF",
+      "version": "v1.2"
+    },
+    "tabs": {
+      "general": "Общие",
+      "ipBlocker": "IP Блокер",
+      "settings": "Настройки"
+    },
+    "subTabs": {
+      "stripe": "Stripe",
+      "cursor": "Cursor AI",
+      "addresses": "Адреса",
+      "names": "Имена"
+    },
+    "general": {
+      "cardGenerator": "Генератор карт",
+      "binTemplate": "BIN шаблон:",
+      "binPlaceholder": "Введите BIN (например 552461)",
+      "generate": "Генерировать",
+      "generateCards": "Сгенерировать карты",
+      "autofill": "Автозаполнение",
+      "clearData": "Очистить данные Stripe",
+      "history": "История",
+      "settings": "Настройки",
+      "dataSource": "Источник данных:",
+      "static": "Статичный",
+      "manual": "Ручной",
+      "auto": "Авто",
+      "luhnValidation": "Использовать валидацию Луна",
+      "cardValidation": "Использовать валидацию Луна",
+      "noHistory": "История пуста"
+    },
+    "cursor": {
+      "status": "В разработке"
+    },
+    "ipBlocker": {
+      "title": "IP Блокер - 3DS Challenge",
+      "currentIP": "Текущий IP:",
+      "status": "Статус:",
+      "statusActive": "Активен",
+      "statusBlocked": "Заблокирован",
+      "statusNotTracked": "Не отслеживается",
+      "loading": "Загрузка...",
+      "error": "Ошибка",
+      "refresh": "Обновить",
+      "blockedIPs": "Заблокированные IP",
+      "noBlockedIPs": "Заблокированные IP отсутствуют",
+      "removeIP": "Удалить из блокировки",
+      "confirmRemove": "Удалить IP {ip} из блокировки?",
+      "ipBlocked": "IP заблокирован: {ip}",
+      "ipRemoved": "IP удален из блокировки",
+      "ipAlreadyBlocked": "IP уже заблокирован",
+      "ipAlreadyInList": "IP уже в списке блокировки: {ip}",
+      "failedToFetch": "Не удалось получить IP адрес",
+      "errorFetchingIP": "Ошибка получения IP: {error}",
+      "ipDataRefreshed": "Данные IP обновлены",
+      "reason3DS": "3DS Challenge автоопределение"
+    },
+    "settings": {
+      "stripeSettings": "Настройки Stripe",
+      "cursorSettings": "Настройки Cursor AI",
+      "addresses": "Адреса",
+      "names": "Имена",
+      "fullName": "Полное имя",
+      "addressLine1": "Адрес строка 1",
+      "addressLine2": "Адрес строка 2 (необязательно)",
+      "city": "Город",
+      "state": "Регион",
+      "zipCode": "Почтовый индекс",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "add": "Добавить",
+      "delete": "Удалить",
+      "noAddresses": "Нет сохраненных адресов",
+      "noNames": "Нет сохраненных имен"
+    },
+    "themes": {
+      "dark": "Темная",
+      "light": "Светлая",
+      "galaxy": "Галактическая",
+      "sky": "Небесная",
+      "underground": "Подземная"
+    },
+    "toast": {
+      "themeDark": "Тема: Темная",
+      "themeLight": "Тема: Светлая",
+      "themeGalaxy": "Тема: Галактическая",
+      "themeSky": "Тема: Небесная",
+      "themeUnderground": "Тема: Подземная",
+      "languageEnglish": "Язык: Английский 🇺🇸",
+      "languageRussian": "Язык: Русский 🇷🇺"
+    },
+    "tooltips": {
+      "toggleTheme": "Сменить тему",
+      "switchToRussian": "Переключить на русский",
+      "switchToEnglish": "Переключить на английский",
+      "saveToHistory": "Сохранить в историю",
+      "settings": "Настройки"
+    }
+  }
+}

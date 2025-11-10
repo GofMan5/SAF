@@ -464,6 +464,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     clearStripeBrowsingData(sendResponse);
     return true;
   }
+  
+  if (request.action === 'ipBlocked') {
+    // Логируем заблокированный IP
+    console.log('[SAF IP Blocker] IP blocked:', request.ip);
+    console.log('[SAF IP Blocker] Entry:', request.entry);
+    
+    // Можно добавить дополнительную обработку, например:
+    // - Отправку на сервер
+    // - Запись в файл
+    // - Уведомления и т.д.
+    
+    sendResponse({ success: true });
+    return true;
+  }
 });
 
 /**
@@ -754,8 +768,10 @@ async function clearStripeBrowsingData(callback) {
     for (const domain of stripeDomains) {
       const cookies = await chrome.cookies.getAll({ domain: domain });
       for (const cookie of cookies) {
+        // Убираем ведущую точку из домена если она есть
+        const cookieDomain = cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain;
         await chrome.cookies.remove({
-          url: `https://${cookie.domain}${cookie.path}`,
+          url: `https://${cookieDomain}${cookie.path}`,
           name: cookie.name
         });
       }

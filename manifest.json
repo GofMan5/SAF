@@ -14,7 +14,8 @@
   "host_permissions": [
     "https://checkout.stripe.com/*",
     "https://stripe.com/*",
-    "https://*.stripe.com/*"
+    "https://*.stripe.com/*",
+    "https://api.ipify.org/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -27,6 +28,12 @@
       "128": "icon128.png"
     }
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["translations.json"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": [

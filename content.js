@@ -874,6 +874,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'fillForm') {
     autofillAll();
   }
+  
+  if (request.action === 'toggle3DSDetection') {
+    threeDSDetectionActive = request.enabled;
+    console.log('[SAF IP Blocker] 3DS detection:', threeDSDetectionActive ? 'enabled' : 'disabled');
+    sendResponse({ success: true, enabled: threeDSDetectionActive });
+  }
+  
+  if (request.action === 'check3DSStatus') {
+    sendResponse({ 
+      success: true, 
+      enabled: threeDSDetectionActive,
+      modalPresent: detect3DSChallengeModal()
+    });
+  }
+  
+  return true; // Для асинхронных ответов
 });
 
 // Clear cards on page unload or reload
@@ -886,3 +902,165 @@ window.addEventListener('beforeunload', () => {
 chrome.storage.local.remove(['generatedCards'], () => {
   console.log('[SAF] Cleared old cards on page load');
 });
+
+// ========================
+// IP Blocker - 3DS Challenge Detection
+// ========================
+
+let threeDSDetectionActive = true;
+let lastDetectionTime = 0;
+const DETECTION_COOLDOWN = 5000; // 5 секунд между обнаружениями
+
+/**
+ * Проверяет наличие модального окна 3DS Challenge
+ */
+function detect3DSChallengeModal() {
+  if (!threeDSDetectionActive) return false;
+  
+  const now = Date.now();
+  if (now - lastDetectionTime < DETECTION_COOLDOWN) {
+    return false; // Слишком рано, пропускаем
+  }
+  
+  try {
+    const roots = collectRoots();
+    
+    for (const root of roots) {
+      // Ищем модальное окно с классом LightboxModal
+      const modalContainers = root.querySelectorAll('.LightboxModal, [class*="ThreeDS"], [class*="3DS"]');
+      
+      for (const modal of modalContainers) {
+        // Проверяем, что модальное окно открыто и содержит iframe с 3DS Challenge
+        const isOpen = modal.classList.contains('LightboxModal-open') || 
+                       modal.classList.contains('open') ||
+                       modal.style.display !== 'none';
+        
+        if (!isOpen) continue;
+        
+        // Ищем iframe с 3DS Challenge
+        const iframe = modal.querySelector('iframe[name*="challenge"], iframe.ThreeDS2-challenge, iframe[title*="3DS"]');
+        
+        if (iframe) {
+          console.log('[SAF IP Blocker] 🚨 3DS Challenge modal detected!');
+          lastDetectionTime = now;
+          return true;
+        }
+        
+        // Дополнительная проверка по содержимому
+        const modalText = modal.textContent || '';
+        if (modalText.toLowerCase().includes('challenge') || 
+            modalText.toLowerCase().includes('verification') ||
+            modalText.toLowerCase().includes('authenticate')) {
+          
+          const hasIframe = modal.querySelector('iframe');
+          if (hasIframe) {
+            console.log('[SAF IP Blocker] 🚨 3DS Challenge modal detected (by content)!');
+            lastDetectionTime = now;
+            return true;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[SAF IP Blocker] Error detecting 3DS modal:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * Получает текущий IP и добавляет в блокировку
+ */
+async function blockCurrentIP() {
+  try {
+    console.log('[SAF IP Blocker] Fetching current IP...');
+    
+    // Получаем IP через публичный API
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    const currentIP = data.ip;
+    
+    console.log('[SAF IP Blocker] Current IP:', currentIP);
+    
+    // Получаем список заблокированных IP
+    chrome.storage.local.get(['blockedIPs'], (result) => {
+      let blockedIPs = result.blockedIPs || [];
+      
+      // Проверяем, не заблокирован ли уже этот IP
+      const alreadyBlocked = blockedIPs.some(item => item.ip === currentIP);
+      
+      if (alreadyBlocked) {
+        console.log('[SAF IP Blocker] IP already blocked:', currentIP);
+        showNotification('⚠️ IP already in blocklist: ' + currentIP, 'warning');
+        return;
+      }
+      
+      // Добавляем IP в блокировку
+      const blockedEntry = {
+        ip: currentIP,
+        date: new Date().toISOString(),
+        reason: '3DS Challenge Auto-detected',
+        timestamp: Date.now()
+      };
+      
+      blockedIPs.push(blockedEntry);
+      
+      // Сохраняем в storage
+      chrome.storage.local.set({ blockedIPs: blockedIPs }, () => {
+        console.log('[SAF IP Blocker] ✅ IP blocked:', currentIP);
+        showNotification('🚫 IP blocked: ' + currentIP, 'error');
+        
+        // Отправляем сообщение в background для синхронизации
+        chrome.runtime.sendMessage({
+          action: 'ipBlocked',
+          ip: currentIP,
+          entry: blockedEntry
+        });
+      });
+    });
+    
+  } catch (error) {
+    console.error('[SAF IP Blocker] Error blocking IP:', error);
+    showNotification('❌ Error fetching IP: ' + error.message, 'error');
+  }
+}
+
+/**
+ * Обработчик обнаружения 3DS Challenge
+ */
+async function handle3DSDetection() {
+  if (detect3DSChallengeModal()) {
+    console.log('[SAF IP Blocker] 3DS Challenge detected, blocking IP...');
+    await blockCurrentIP();
+  }
+}
+
+// Запускаем периодическую проверку наличия 3DS Challenge модального окна
+const threeDSCheckInterval = setInterval(() => {
+  handle3DSDetection();
+}, 2000); // Проверяем каждые 2 секунды
+
+// MutationObserver для отслеживания изменений DOM
+const threeDSObserver = new MutationObserver((mutations) => {
+  // Проверяем только если было добавлено что-то существенное
+  const hasSignificantChanges = mutations.some(mutation => {
+    return mutation.addedNodes.length > 0 || 
+           (mutation.type === 'attributes' && mutation.attributeName === 'class');
+  });
+  
+  if (hasSignificantChanges) {
+    handle3DSDetection();
+  }
+});
+
+// Начинаем наблюдение за изменениями в DOM
+if (document.body) {
+  threeDSObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'style']
+  });
+}
+
+console.log('[SAF IP Blocker] 3DS Challenge detection initialized ✅');

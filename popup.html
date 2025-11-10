@@ -9,9 +9,49 @@
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">💳</div>
-      <h2>SAF</h2>
-      <div class="version">v1.0</div>
+      <div class="header-left">
+        <div class="theme-selector">
+          <button id="themeToggle" class="icon-btn header-icon" title="Change theme">
+            <span id="themeIcon">🌙</span>
+          </button>
+          <div id="themeDropdown" class="theme-dropdown">
+            <div class="theme-option" data-theme="dark">
+              <span class="theme-icon">🌙</span>
+              <span class="theme-name">Dark</span>
+              <div class="theme-preview dark"></div>
+            </div>
+            <div class="theme-option" data-theme="light">
+              <span class="theme-icon">☀️</span>
+              <span class="theme-name">Light</span>
+              <div class="theme-preview light"></div>
+            </div>
+            <div class="theme-option" data-theme="galaxy">
+              <span class="theme-icon">🌌</span>
+              <span class="theme-name">Galaxy</span>
+              <div class="theme-preview galaxy"></div>
+            </div>
+            <div class="theme-option" data-theme="sky">
+              <span class="theme-icon">☁️</span>
+              <span class="theme-name">Sky</span>
+              <div class="theme-preview sky"></div>
+            </div>
+            <div class="theme-option" data-theme="underground">
+              <span class="theme-icon">⛏️</span>
+              <span class="theme-name">Underground</span>
+              <div class="theme-preview underground"></div>
+            </div>
+          </div>
+        </div>
+        <button id="langToggle" class="icon-btn header-icon" title="Switch language">
+          <span id="langIcon">🇺🇸</span>
+        </button>
+      </div>
+      <div class="header-center">
+        <div class="logo">💳</div>
+        <h2>SAF</h2>
+        <div class="version">v1.2</div>
+      </div>
+      <div class="header-right"></div>
     </div>
     
     <div class="tabs">
@@ -19,9 +59,9 @@
         <span class="tab-icon">⚡</span>
         <span>General</span>
       </button>
-      <button class="tab-btn" data-tab="binlist">
-        <span class="tab-icon">💎</span>
-        <span>BIN List</span>
+      <button class="tab-btn" data-tab="ipblocker">
+        <span class="tab-icon">🚫</span>
+        <span>IP Blocker</span>
       </button>
       <button class="tab-btn" data-tab="settings">
         <span class="tab-icon">⚙️</span>
@@ -32,11 +72,22 @@
     <div class="content">
       <!-- General Tab -->
       <div id="general-tab" class="tab-content active">
-        <div class="section">
-          <div class="section-header">
-            <span class="section-icon">💳</span>
-            <h3>Card Generator</h3>
-          </div>
+        <div class="sub-tabs">
+          <button class="sub-tab-btn active" data-subtab="stripe">
+            <span>💳 Stripe</span>
+          </button>
+          <button class="sub-tab-btn" data-subtab="cursor">
+            <span>🤖 Cursor AI</span>
+          </button>
+        </div>
+        
+        <!-- Stripe SubTab -->
+        <div id="stripe-subtab" class="sub-tab-content active">
+          <div class="section">
+            <div class="section-header">
+              <span class="section-icon">💳</span>
+              <h3>Card Generator</h3>
+            </div>
           
           <div class="input-group">
             <label for="binInput">BIN Template:</label>
@@ -56,7 +107,7 @@
                 <label class="mini-checkbox-label">
                   <input type="checkbox" id="useLuhnValidation" checked>
                   <span class="mini-checkbox-custom"></span>
-                  <span class="mini-checkbox-text">Card Validation</span>
+                  <span class="mini-checkbox-text">Use Luhn Validation</span>
                 </label>
               </div>
               
@@ -102,67 +153,118 @@
           </div>
           <div id="binHistoryList" class="history-list"></div>
         </div>
+        </div>
+        
+        <!-- Cursor AI SubTab -->
+        <div id="cursor-subtab" class="sub-tab-content">
+          <div class="coming-soon-container">
+            <div class="coming-soon-icon">🤖</div>
+            <div class="coming-soon-title">Cursor AI Autofill</div>
+            <div class="coming-soon-subtitle" id="cursorStatus">In Development</div>
+          </div>
+        </div>
       </div>
       
-      <!-- BIN List Tab -->
-      <div id="binlist-tab" class="tab-content">
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 400px; gap: 16px;">
-          <div style="font-size: 72px; opacity: 0.3;">💎</div>
-          <div style="font-size: 32px; font-weight: 600; color: var(--text-primary);">Soon</div>
-          <div style="font-size: 14px; color: var(--text-secondary); text-align: center; max-width: 300px;">
-            BIN List database coming in future updates
+      <!-- IP Blocker Tab -->
+      <div id="ipblocker-tab" class="tab-content">
+        <div class="section">
+          <div class="section-header">
+            <span class="section-icon">🚫</span>
+            <h3>IP Blocker - 3DS Challenge</h3>
           </div>
+          
+          <div class="ip-info-box">
+            <div class="ip-info-item">
+              <span class="ip-label">Current IP:</span>
+              <span id="currentIP" class="ip-value">Loading...</span>
+            </div>
+            <div class="ip-info-item">
+              <span class="ip-label">Status:</span>
+              <span id="ipStatus" class="ip-status">Not tracked</span>
+            </div>
+          </div>
+          
+          <button id="refreshIPBtn" class="btn btn-primary">
+            <span class="btn-icon">🔄</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+        
+        <div class="section">
+          <div class="section-header">
+            <span class="section-icon">📜</span>
+            <h3>Blocked IPs</h3>
+          </div>
+          <div id="blockedIPsList" class="list-container-compact"></div>
         </div>
       </div>
       
       <!-- Settings Tab -->
       <div id="settings-tab" class="tab-content">
         <div class="sub-tabs">
-          <button class="sub-tab-btn active" data-subtab="addresses">
-            <span>🏠 Addresses</span>
+          <button class="sub-tab-btn active" data-subtab="stripe-settings">
+            <span>💳 Stripe</span>
           </button>
-          <button class="sub-tab-btn" data-subtab="names">
-            <span>👤 Names</span>
+          <button class="sub-tab-btn" data-subtab="cursor-settings">
+            <span>🤖 Cursor</span>
           </button>
         </div>
         
-        <!-- Addresses SubTab -->
-        <div id="addresses-subtab" class="sub-tab-content active">
-          <div class="form-group-compact">
-            <input type="text" id="nameInput" placeholder="Full Name" class="form-input">
-            <input type="text" id="address1Input" placeholder="Address Line 1" class="form-input">
-            <input type="text" id="address2Input" placeholder="Address Line 2 (optional)" class="form-input">
-            <div class="input-row">
-              <input type="text" id="cityInput" placeholder="City" class="form-input">
-              <input type="text" id="stateInput" placeholder="State" class="form-input">
+        <!-- Stripe Settings SubTab -->
+        <div id="stripe-settings-subtab" class="sub-tab-content active">
+          <div class="section">
+            <div class="section-header">
+              <span class="section-icon">🏠</span>
+              <h3>Addresses</h3>
             </div>
-            <input type="text" id="zipInput" placeholder="ZIP Code" class="form-input">
-            <button id="addAddressBtn" class="btn btn-secondary btn-sm">
-              <span class="btn-icon">+</span>
-              <span>Add</span>
-            </button>
+            <div class="form-group-compact">
+              <input type="text" id="nameInput" placeholder="Full Name" class="form-input">
+              <input type="text" id="address1Input" placeholder="Address Line 1" class="form-input">
+              <input type="text" id="address2Input" placeholder="Address Line 2 (optional)" class="form-input">
+              <div class="input-row">
+                <input type="text" id="cityInput" placeholder="City" class="form-input">
+                <input type="text" id="stateInput" placeholder="State" class="form-input">
+              </div>
+              <input type="text" id="zipInput" placeholder="ZIP Code" class="form-input">
+              <button id="addAddressBtn" class="btn btn-secondary btn-sm">
+                <span class="btn-icon">+</span>
+                <span>Add</span>
+              </button>
+            </div>
+            
+            <div class="list-container-compact">
+              <div id="addressesList"></div>
+            </div>
           </div>
           
-          <div class="list-container-compact">
-            <div id="addressesList"></div>
+          <div class="section">
+            <div class="section-header">
+              <span class="section-icon">👤</span>
+              <h3>Names</h3>
+            </div>
+            <div class="form-group-compact">
+              <div class="input-row">
+                <input type="text" id="firstNameInput" placeholder="First Name" class="form-input">
+                <input type="text" id="lastNameInput" placeholder="Last Name" class="form-input">
+              </div>
+              <button id="addNameBtn" class="btn btn-secondary btn-sm">
+                <span class="btn-icon">+</span>
+                <span>Add</span>
+              </button>
+            </div>
+            
+            <div class="list-container-compact">
+              <div id="namesList"></div>
+            </div>
           </div>
         </div>
         
-        <!-- Names SubTab -->
-        <div id="names-subtab" class="sub-tab-content">
-          <div class="form-group-compact">
-            <div class="input-row">
-              <input type="text" id="firstNameInput" placeholder="First Name" class="form-input">
-              <input type="text" id="lastNameInput" placeholder="Last Name" class="form-input">
-            </div>
-            <button id="addNameBtn" class="btn btn-secondary btn-sm">
-              <span class="btn-icon">+</span>
-              <span>Add</span>
-            </button>
-          </div>
-          
-          <div class="list-container-compact">
-            <div id="namesList"></div>
+        <!-- Cursor Settings SubTab -->
+        <div id="cursor-settings-subtab" class="sub-tab-content">
+          <div class="coming-soon-container">
+            <div class="coming-soon-icon">🤖</div>
+            <div class="coming-soon-title">Cursor AI Settings</div>
+            <div class="coming-soon-subtitle" id="cursorSettingsStatus">In Development</div>
           </div>
         </div>
       </div>

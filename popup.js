@@ -25,10 +25,18 @@ const lastNameInput = document.getElementById('lastNameInput');
 const addNameBtn = document.getElementById('addNameBtn');
 const namesList = document.getElementById('namesList');
 
+// IP Blocker elements
+const currentIPElement = document.getElementById('currentIP');
+const ipStatusElement = document.getElementById('ipStatus');
+const refreshIPBtn = document.getElementById('refreshIPBtn');
+const blockedIPsList = document.getElementById('blockedIPsList');
+
 // Luhn validation checkbox
 const useLuhnValidation = document.getElementById('useLuhnValidation');
 
 const DEFAULT_BIN = '552461xxxxxxxxxx';
+
+let currentIPAddress = null;
 
 // BIN List - Coming Soon (функционал временно отключен)
 
@@ -137,10 +145,6 @@ if (nameSourceSelect) {
   });
 }
 
-
-// Initialize
-loadData();
-
 // Tab switching
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
@@ -151,10 +155,20 @@ tabs.forEach(tab => {
     
     tab.classList.add('active');
     document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // Обновляем язык при переключении на вкладки
+    if (Object.keys(translations).length > 0) {
+      if (tabName === 'ipblocker') {
+        updateIPBlockerLanguage();
+      } else if (tabName === 'settings') {
+        updateSettingsLanguage();
+        updateCursorLanguage();
+      }
+    }
   });
 });
 
-// Sub-tab switching (for Settings)
+// Sub-tab switching (for General and Settings)
 const subTabs = document.querySelectorAll('.sub-tab-btn');
 const subTabContents = document.querySelectorAll('.sub-tab-content');
 
@@ -162,11 +176,32 @@ subTabs.forEach(subTab => {
   subTab.addEventListener('click', () => {
     const subtabName = subTab.dataset.subtab;
     
-    subTabs.forEach(st => st.classList.remove('active'));
-    subTabContents.forEach(stc => stc.classList.remove('active'));
+    // Получаем родительский контейнер вкладки (General или Settings)
+    const parentTabContent = subTab.closest('.tab-content');
+    
+    if (!parentTabContent) return;
+    
+    // Удаляем active только у подвкладок в текущем родителе
+    const siblingSubTabs = parentTabContent.querySelectorAll('.sub-tab-btn');
+    const siblingSubTabContents = parentTabContent.querySelectorAll('.sub-tab-content');
+    
+    siblingSubTabs.forEach(st => st.classList.remove('active'));
+    siblingSubTabContents.forEach(stc => stc.classList.remove('active'));
     
     subTab.classList.add('active');
-    document.getElementById(`${subtabName}-subtab`).classList.add('active');
+    const targetSubTab = document.getElementById(`${subtabName}-subtab`);
+    if (targetSubTab) {
+      targetSubTab.classList.add('active');
+      
+      // Обновляем переводы при переключении на подвкладки Settings
+      if (Object.keys(translations).length > 0) {
+        if (subtabName === 'stripe-settings') {
+          updateSettingsLanguage();
+        } else if (subtabName === 'cursor-settings') {
+          updateCursorLanguage();
+        }
+      }
+    }
   });
 });
 
@@ -558,4 +593,654 @@ function loadData() {
   loadBinHistory();
   loadAddresses();
   loadNames();
+  loadIPBlockerData(); // Загружаем данные IP Blocker
 }
+
+// ========================
+// IP Blocker Management
+// ========================
+
+/**
+ * Получает текущий IP адрес через публичный API
+ */
+async function fetchCurrentIP() {
+  if (!currentIPElement) return; // Check if element exists
+  
+  try {
+    currentIPElement.textContent = t('ipBlocker.loading');
+    
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    currentIPAddress = data.ip;
+    
+    currentIPElement.textContent = currentIPAddress;
+    checkIPStatus();
+    
+    console.log('[SAF IP Blocker] Current IP fetched:', currentIPAddress);
+  } catch (error) {
+    console.error('[SAF IP Blocker] Error fetching IP:', error);
+    if (currentIPElement) {
+      currentIPElement.textContent = t('ipBlocker.error');
+    }
+    showToast(t('ipBlocker.failedToFetch'), 'error');
+  }
+}
+
+/**
+ * Проверяет статус текущего IP (заблокирован или нет)
+ */
+function checkIPStatus() {
+  if (!currentIPAddress || !ipStatusElement) return;
+  
+  chrome.storage.local.get(['blockedIPs'], (result) => {
+    const blockedIPs = result.blockedIPs || [];
+    const isBlocked = blockedIPs.some(item => item.ip === currentIPAddress);
+    
+    if (isBlocked) {
+      ipStatusElement.textContent = '🚫 ' + t('ipBlocker.statusBlocked');
+      ipStatusElement.className = 'ip-status blocked';
+    } else {
+      ipStatusElement.textContent = '✅ ' + t('ipBlocker.statusActive');
+      ipStatusElement.className = 'ip-status active';
+    }
+  });
+}
+
+/**
+ * Добавляет IP в список блокировки
+ */
+function addIPToBlocklist(ip, reason = 'Manual') {
+  if (!ip) {
+    showToast('Enter IP address', 'error');
+    return;
+  }
+  
+  // Простая валидация IP адреса
+  const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  if (!ipRegex.test(ip)) {
+    showToast('Invalid IP format', 'error');
+    return;
+  }
+  
+  chrome.storage.local.get(['blockedIPs'], (result) => {
+    let blockedIPs = result.blockedIPs || [];
+    
+    // Проверяем, не заблокирован ли уже этот IP
+    const alreadyBlocked = blockedIPs.some(item => item.ip === ip);
+    
+    if (alreadyBlocked) {
+      showToast('IP already blocked', 'error');
+      return;
+    }
+    
+    // Добавляем новый IP
+    const blockedEntry = {
+      ip: ip,
+      date: new Date().toISOString(),
+      reason: reason,
+      timestamp: Date.now()
+    };
+    
+    blockedIPs.push(blockedEntry);
+    
+    // Сохраняем в storage
+    chrome.storage.local.set({ blockedIPs: blockedIPs }, () => {
+      console.log('[SAF IP Blocker] IP added to blocklist:', ip);
+      showToast('IP blocked');
+      loadBlockedIPs();
+      checkIPStatus();
+    });
+  });
+}
+
+/**
+ * Удаляет IP из списка блокировки
+ */
+function deleteBlockedIP(ip) {
+  chrome.storage.local.get(['blockedIPs'], (result) => {
+    let blockedIPs = result.blockedIPs || [];
+    blockedIPs = blockedIPs.filter(item => item.ip !== ip);
+    
+    chrome.storage.local.set({ blockedIPs: blockedIPs }, () => {
+      console.log('[SAF IP Blocker] IP removed from blocklist:', ip);
+      showToast(t('ipBlocker.ipRemoved'));
+      loadBlockedIPs();
+      checkIPStatus();
+    });
+  });
+}
+
+/**
+ * Загружает и отображает список заблокированных IP
+ */
+function loadBlockedIPs() {
+  if (!blockedIPsList) return; // Check if element exists
+  
+  chrome.storage.local.get(['blockedIPs'], (result) => {
+    const blockedIPs = result.blockedIPs || [];
+    blockedIPsList.innerHTML = '';
+    
+    if (blockedIPs.length === 0) {
+      blockedIPsList.innerHTML = `<div class="empty">${t('ipBlocker.noBlockedIPs')}</div>`;
+      return;
+    }
+    
+    // Сортируем по дате (новые первыми)
+    blockedIPs.sort((a, b) => b.timestamp - a.timestamp);
+    
+    blockedIPs.forEach(item => {
+      const ipItem = document.createElement('div');
+      ipItem.className = 'blocked-ip-item';
+      
+      const ipInfo = document.createElement('div');
+      ipInfo.className = 'blocked-ip-info';
+      
+      const ipAddress = document.createElement('div');
+      ipAddress.className = 'blocked-ip-address';
+      ipAddress.textContent = item.ip;
+      
+      const ipDate = document.createElement('div');
+      ipDate.className = 'blocked-ip-date';
+      ipDate.textContent = formatDate(item.date);
+      
+      const ipReason = document.createElement('div');
+      ipReason.className = 'blocked-ip-reason';
+      ipReason.textContent = item.reason;
+      
+      ipInfo.appendChild(ipAddress);
+      ipInfo.appendChild(ipDate);
+      ipInfo.appendChild(ipReason);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '×';
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.title = t('ipBlocker.removeIP');
+      deleteBtn.addEventListener('click', () => {
+        const confirmMsg = t('ipBlocker.confirmRemove').replace('{ip}', item.ip);
+        if (confirm(confirmMsg)) {
+          deleteBlockedIP(item.ip);
+        }
+      });
+      
+      ipItem.appendChild(ipInfo);
+      ipItem.appendChild(deleteBtn);
+      blockedIPsList.appendChild(ipItem);
+    });
+  });
+}
+
+/**
+ * Форматирует дату в читаемый вид
+ */
+function formatDate(isoString) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  // Переводы для относительного времени
+  const timeStrings = {
+    en: {
+      justNow: 'Just now',
+      minsAgo: (n) => `${n} min${n > 1 ? 's' : ''} ago`,
+      hoursAgo: (n) => `${n} hour${n > 1 ? 's' : ''} ago`,
+      daysAgo: (n) => `${n} day${n > 1 ? 's' : ''} ago`
+    },
+    ru: {
+      justNow: 'Только что',
+      minsAgo: (n) => `${n} мин. назад`,
+      hoursAgo: (n) => `${n} ч. назад`,
+      daysAgo: (n) => `${n} дн. назад`
+    }
+  };
+  
+  const lang = currentLang || 'en';
+  const strings = timeStrings[lang];
+  
+  if (diffMins < 1) return strings.justNow;
+  if (diffMins < 60) return strings.minsAgo(diffMins);
+  if (diffHours < 24) return strings.hoursAgo(diffHours);
+  if (diffDays < 7) return strings.daysAgo(diffDays);
+  
+  // Для старых дат используем локализованный формат
+  const locale = lang === 'ru' ? 'ru-RU' : 'en-US';
+  return date.toLocaleDateString(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+/**
+ * Загружает все данные для IP Blocker
+ */
+function loadIPBlockerData() {
+  // Проверяем, что элементы IP Blocker существуют (вкладка открыта)
+  if (currentIPElement || blockedIPsList) {
+    fetchCurrentIP();
+    loadBlockedIPs();
+  }
+}
+
+// Event Listeners для IP Blocker
+if (refreshIPBtn) {
+  refreshIPBtn.addEventListener('click', () => {
+    fetchCurrentIP();
+    loadBlockedIPs();
+    showToast(t('ipBlocker.ipDataRefreshed'));
+  });
+}
+
+// Слушаем сообщения от content script о заблокированных IP
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'ipBlocked') {
+    console.log('[SAF IP Blocker] IP blocked notification received:', request.ip);
+    loadBlockedIPs();
+    checkIPStatus();
+    const message = t('ipBlocker.ipBlocked').replace('{ip}', request.ip);
+    showToast(message, 'error');
+  }
+});
+
+console.log('[SAF IP Blocker] Popup initialized ✅');
+
+// ========================
+// Theme & Language Management
+// ========================
+
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = document.getElementById('themeIcon');
+const themeDropdown = document.getElementById('themeDropdown');
+const themeOptions = document.querySelectorAll('.theme-option');
+const langToggle = document.getElementById('langToggle');
+const langIcon = document.getElementById('langIcon');
+
+let currentTheme = 'dark';
+let currentLang = 'en';
+let translations = {};
+
+// Маппинг тем на иконки
+const themeIcons = {
+  'dark': '🌙',
+  'light': '☀️',
+  'galaxy': '🌌',
+  'sky': '☁️',
+  'underground': '⛏️'
+};
+
+/**
+ * Загружает файл переводов
+ */
+async function loadTranslations() {
+  try {
+    const response = await fetch(chrome.runtime.getURL('translations.json'));
+    translations = await response.json();
+    console.log('[SAF] Translations loaded successfully');
+  } catch (error) {
+    console.error('[SAF] Failed to load translations:', error);
+  }
+}
+
+/**
+ * Получает перевод по ключу
+ */
+function t(key) {
+  // Если переводы еще не загружены, возвращаем заглушки
+  if (!translations || Object.keys(translations).length === 0) {
+    const fallbacks = {
+      'ipBlocker.loading': 'Loading...',
+      'ipBlocker.error': 'Error',
+      'ipBlocker.noBlockedIPs': 'No blocked IPs',
+      'ipBlocker.statusActive': 'Active',
+      'ipBlocker.statusBlocked': 'Blocked',
+      'ipBlocker.failedToFetch': 'Failed to fetch IP address',
+      'themes.dark': 'Dark',
+      'themes.light': 'Light',
+      'themes.galaxy': 'Galaxy',
+      'themes.sky': 'Sky',
+      'themes.underground': 'Underground',
+      'cursor.status': 'In Development'
+    };
+    return fallbacks[key] || key;
+  }
+  
+  const keys = key.split('.');
+  let value = translations[currentLang];
+  
+  for (const k of keys) {
+    if (value && value[k]) {
+      value = value[k];
+    } else {
+      console.warn(`[SAF] Translation not found: ${key}`);
+      return key;
+    }
+  }
+  
+  return value;
+}
+
+/**
+ * Загружает сохраненные настройки темы и языка
+ */
+async function loadSettings() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['theme', 'language'], (result) => {
+      // Загружаем тему
+      if (result.theme) {
+        currentTheme = result.theme;
+      }
+      applyTheme(currentTheme);
+      
+      // Загружаем язык (по умолчанию 'en')
+      if (result.language) {
+        currentLang = result.language;
+      } else {
+        // Если язык не сохранен, устанавливаем английский по умолчанию
+        currentLang = 'en';
+        chrome.storage.local.set({ language: 'en' });
+      }
+      applyLanguage(currentLang);
+      
+      resolve();
+    });
+  });
+}
+
+/**
+ * Применяет тему
+ */
+function applyTheme(theme) {
+  currentTheme = theme;
+  
+  // Удаляем все классы тем
+  document.body.classList.remove('light-theme', 'galaxy-theme', 'sky-theme', 'underground-theme');
+  
+  // Добавляем класс выбранной темы (если не dark)
+  if (theme !== 'dark') {
+    document.body.classList.add(`${theme}-theme`);
+  }
+  
+  // Обновляем иконку
+  themeIcon.textContent = themeIcons[theme] || '🌙';
+  
+  // Обновляем активную опцию в меню
+  themeOptions.forEach(option => {
+    if (option.dataset.theme === theme) {
+      option.classList.add('active');
+    } else {
+      option.classList.remove('active');
+    }
+  });
+  
+  // Сохраняем настройку
+  chrome.storage.local.set({ theme: theme });
+}
+
+/**
+ * Обновляет все тексты интерфейса
+ */
+function updateUILanguage() {
+  // Главные вкладки
+  const tabGeneral = document.querySelector('[data-tab="general"]');
+  const tabIPBlocker = document.querySelector('[data-tab="ipblocker"]');
+  const tabSettings = document.querySelector('[data-tab="settings"]');
+  
+  if (tabGeneral) tabGeneral.querySelector('span:last-child').textContent = t('tabs.general');
+  if (tabIPBlocker) tabIPBlocker.querySelector('span:last-child').textContent = t('tabs.ipBlocker');
+  if (tabSettings) tabSettings.querySelector('span:last-child').textContent = t('tabs.settings');
+  
+  // Подвкладки General
+  const subTabStripe = document.querySelector('[data-subtab="stripe"]');
+  const subTabCursor = document.querySelector('[data-subtab="cursor"]');
+  
+  if (subTabStripe) subTabStripe.querySelector('span').textContent = '💳 ' + t('subTabs.stripe');
+  if (subTabCursor) subTabCursor.querySelector('span').textContent = '🤖 ' + t('subTabs.cursor');
+  
+  // Подвкладки Settings
+  const subTabStripeSettings = document.querySelector('[data-subtab="stripe-settings"]');
+  const subTabCursorSettings = document.querySelector('[data-subtab="cursor-settings"]');
+  
+  if (subTabStripeSettings) subTabStripeSettings.querySelector('span').textContent = '💳 ' + t('subTabs.stripe');
+  if (subTabCursorSettings) subTabCursorSettings.querySelector('span').textContent = '🤖 ' + t('subTabs.cursor');
+  
+  // IP Blocker
+  updateIPBlockerLanguage();
+  
+  // Settings
+  updateSettingsLanguage();
+  
+  // Cursor status
+  updateCursorLanguage();
+  
+  // Tooltips
+  updateTooltips();
+  
+  // Theme names
+  updateThemeNames();
+}
+
+/**
+ * Обновляет тексты IP Blocker
+ */
+function updateIPBlockerLanguage() {
+  // Заголовок первой секции
+  const sectionHeaders = document.querySelectorAll('#ipblocker-tab .section-header h3');
+  if (sectionHeaders[0]) sectionHeaders[0].textContent = t('ipBlocker.title');
+  if (sectionHeaders[1]) sectionHeaders[1].textContent = t('ipBlocker.blockedIPs');
+  
+  // Метки полей
+  const ipLabels = document.querySelectorAll('#ipblocker-tab .ip-label');
+  if (ipLabels[0]) ipLabels[0].textContent = t('ipBlocker.currentIP');
+  if (ipLabels[1]) ipLabels[1].textContent = t('ipBlocker.status');
+  
+  // Кнопка Refresh
+  const refreshBtn = document.getElementById('refreshIPBtn');
+  if (refreshBtn) {
+    const refreshText = refreshBtn.querySelector('span:last-child');
+    if (refreshText) refreshText.textContent = t('ipBlocker.refresh');
+  }
+  
+  // Обновляем статус текущего IP
+  if (currentIPAddress) {
+    checkIPStatus();
+  } else {
+    // Если IP еще не загружен
+    const ipStatus = document.getElementById('ipStatus');
+    if (ipStatus && ipStatus.textContent === 'Not tracked') {
+      ipStatus.textContent = t('ipBlocker.statusNotTracked');
+    }
+  }
+  
+  // Перезагружаем список заблокированных IP для обновления текстов
+  loadBlockedIPs();
+}
+
+/**
+ * Обновляет тексты Cursor
+ */
+function updateCursorLanguage() {
+  const cursorStatus = document.getElementById('cursorStatus');
+  if (cursorStatus) cursorStatus.textContent = t('cursor.status');
+  
+  const cursorSettingsStatus = document.getElementById('cursorSettingsStatus');
+  if (cursorSettingsStatus) cursorSettingsStatus.textContent = t('cursor.status');
+}
+
+/**
+ * Обновляет тексты Settings
+ */
+function updateSettingsLanguage() {
+  // Заголовки секций
+  const sectionHeaders = document.querySelectorAll('#stripe-settings-subtab .section-header h3');
+  if (sectionHeaders[0]) sectionHeaders[0].textContent = t('settings.addresses');
+  if (sectionHeaders[1]) sectionHeaders[1].textContent = t('settings.names');
+  
+  // Placeholder'ы
+  const nameInput = document.getElementById('nameInput');
+  const address1Input = document.getElementById('address1Input');
+  const address2Input = document.getElementById('address2Input');
+  const cityInput = document.getElementById('cityInput');
+  const stateInput = document.getElementById('stateInput');
+  const zipInput = document.getElementById('zipInput');
+  
+  if (nameInput) nameInput.placeholder = t('settings.fullName');
+  if (address1Input) address1Input.placeholder = t('settings.addressLine1');
+  if (address2Input) address2Input.placeholder = t('settings.addressLine2');
+  if (cityInput) cityInput.placeholder = t('settings.city');
+  if (stateInput) stateInput.placeholder = t('settings.state');
+  if (zipInput) zipInput.placeholder = t('settings.zipCode');
+  
+  // Кнопка Add
+  const addAddressBtn = document.getElementById('addAddressBtn');
+  if (addAddressBtn) addAddressBtn.querySelector('span:last-child').textContent = t('settings.add');
+  
+  // Names секция
+  const namesTitle = document.querySelectorAll('#stripe-settings-subtab .section-header h3')[1];
+  if (namesTitle) namesTitle.textContent = t('settings.names');
+  
+  const firstNameInput = document.getElementById('firstNameInput');
+  const lastNameInput = document.getElementById('lastNameInput');
+  
+  if (firstNameInput) firstNameInput.placeholder = t('settings.firstName');
+  if (lastNameInput) lastNameInput.placeholder = t('settings.lastName');
+  
+  const addNameBtn = document.getElementById('addNameBtn');
+  if (addNameBtn) addNameBtn.querySelector('span:last-child').textContent = t('settings.add');
+}
+
+/**
+ * Обновляет tooltips
+ */
+function updateTooltips() {
+  if (themeToggle) themeToggle.title = t('tooltips.toggleTheme');
+  if (langToggle) {
+    langToggle.title = currentLang === 'en' ? t('tooltips.switchToRussian') : t('tooltips.switchToEnglish');
+  }
+}
+
+/**
+ * Обновляет названия тем в меню
+ */
+function updateThemeNames() {
+  themeOptions.forEach(option => {
+    const theme = option.dataset.theme;
+    const nameSpan = option.querySelector('.theme-name');
+    if (nameSpan) {
+      nameSpan.textContent = t(`themes.${theme}`);
+    }
+  });
+}
+
+/**
+ * Применяет язык
+ */
+function applyLanguage(lang) {
+  currentLang = lang;
+  
+  // Обновляем иконку флага
+  if (langIcon) {
+    langIcon.textContent = lang === 'en' ? '🇺🇸' : '🇷🇺';
+    langToggle.title = lang === 'en' ? t('tooltips.switchToRussian') : t('tooltips.switchToEnglish');
+  }
+  
+  // Обновляем все тексты интерфейса
+  if (Object.keys(translations).length > 0) {
+    updateUILanguage();
+  }
+  
+  // Сохраняем настройку
+  chrome.storage.local.set({ language: lang });
+  
+  console.log('[SAF] Language changed to:', lang);
+}
+
+/**
+ * Показывает/скрывает меню выбора темы
+ */
+function toggleThemeDropdown() {
+  themeDropdown.classList.toggle('show');
+}
+
+/**
+ * Закрывает меню выбора темы
+ */
+function closeThemeDropdown() {
+  themeDropdown.classList.remove('show');
+}
+
+/**
+ * Выбирает тему
+ */
+function selectTheme(theme) {
+  applyTheme(theme);
+  closeThemeDropdown();
+  
+  // Используем переводы для названия темы
+  const themeName = t(`themes.${theme}`);
+  const message = currentLang === 'en' ? `Theme: ${themeName}` : `Тема: ${themeName}`;
+  showToast(message);
+}
+
+/**
+ * Переключает язык с анимацией
+ */
+async function toggleLanguage() {
+  // Добавляем класс для анимации
+  document.body.classList.add('lang-switching');
+  
+  // Ждем завершения анимации затухания
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // Переключаем язык
+  const newLang = currentLang === 'en' ? 'ru' : 'en';
+  applyLanguage(newLang);
+  
+  // Убираем класс для возврата прозрачности
+  setTimeout(() => {
+    document.body.classList.remove('lang-switching');
+  }, 50);
+  
+  // Показываем уведомление
+  const message = newLang === 'en' ? t('toast.languageEnglish') : t('toast.languageRussian');
+  showToast(message);
+}
+
+// Event Listeners для темы и языка
+if (themeToggle) {
+  themeToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleThemeDropdown();
+  });
+}
+
+// Обработчики для опций тем
+themeOptions.forEach(option => {
+  option.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const theme = option.dataset.theme;
+    selectTheme(theme);
+  });
+});
+
+// Закрытие dropdown при клике вне его
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.theme-selector')) {
+    closeThemeDropdown();
+  }
+});
+
+if (langToggle) {
+  langToggle.addEventListener('click', toggleLanguage);
+}
+
+// Загружаем переводы и настройки при открытии popup
+(async function init() {
+  await loadTranslations();
+  await loadSettings();
+  // Теперь переводы загружены, можно загружать данные
+  loadData();
+})();

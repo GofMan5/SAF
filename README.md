@@ -1,6 +1,6 @@
 # SAF - Stripe Auto Fill
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/saf-extension)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/GofMan5/saf-extension)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A Chrome extension for automatic filling of Stripe checkout forms with customizable card generation, address management, and modern dark UI.
@@ -9,7 +9,7 @@ A Chrome extension for automatic filling of Stripe checkout forms with customiza
 
 - 🚀 **One-Click Auto-Fill** - Fill entire Stripe checkout forms instantly
 - 💳 **Smart Card Generation** - Generate valid test cards with Luhn algorithm
-- 🎨 **Modern Dark UI** - Sleek interface with neon accents
+- 🎨 **Modern UI** - Sleek interface with neon accents
 - 🔒 **Card Validation** - Optional Luhn validation for realistic cards
 - 🏠 **Address Management** - Multiple address sources (static/manual/auto)
 - 👤 **Name Management** - Flexible name generation options
@@ -191,8 +191,6 @@ No build process required. The extension runs directly from source files.
 
 - [x] Add automatic address generation (USA - all 50 states)
 - [x] Add automatic name generation (realistic male/female names)
-- [ ] Implement BIN database
-- [ ] Support for multiple countries (Canada, UK, EU)
 - [ ] Export/import settings
 - [ ] Keyboard shortcuts
 - [ ] Dark/light theme toggle
