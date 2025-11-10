@@ -409,6 +409,58 @@ body.lang-switching .ip-status {
   flex: 1;
 }
 
+.dev-badge {
+  background: linear-gradient(135deg, #ff9800, #ff5722);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+  animation: pulse-badge 2s infinite;
+}
+
+.count-badge {
+  background: var(--accent-gradient);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  display: inline-block;
+  min-width: 24px;
+  text-align: center;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.info-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 8px;
+  color: var(--text-primary);
+}
+
+.info-message strong {
+  color: #ff9800;
+  font-weight: 700;
+}
+
 /* Sub Tabs (for Settings) */
 .sub-tabs {
   display: flex;
@@ -873,6 +925,28 @@ input::placeholder {
 .btn-secondary:hover {
   border-color: var(--accent-primary);
   background: var(--bg-primary);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff4757, #ff6348);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 71, 87, 0.4);
+  background: linear-gradient(135deg, #ff6348, #ff4757);
+}
+
+.btn-danger:active {
+  transform: translateY(0);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-icon {
@@ -1368,6 +1442,18 @@ input::placeholder {
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ip-label {
@@ -1387,6 +1473,25 @@ input::placeholder {
   padding: 4px 10px;
   border-radius: 4px;
   border: 1px solid var(--border-color);
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.ip-country {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-primary);
+  font-weight: 600;
+  font-size: 13px;
+  background: var(--bg-primary);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.country-flag {
+  font-size: 16px;
 }
 
 .ip-status {
@@ -1463,6 +1568,28 @@ input::placeholder {
   font-size: 14px;
   color: var(--text-primary);
   font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.blocked-ip-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.blocked-ip-country {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--accent-primary);
+  font-weight: 600;
+  background: rgba(0, 212, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
 }
 
 .blocked-ip-date {

@@ -969,6 +969,27 @@ function detect3DSChallengeModal() {
 }
 
 /**
+ * Получает информацию о стране по IP адресу
+ */
+async function getCountryByIP(ip) {
+  try {
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode`);
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      return {
+        country: data.country,
+        countryCode: data.countryCode
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('[SAF IP Blocker] Error fetching country info:', error);
+    return null;
+  }
+}
+
+/**
  * Получает текущий IP и добавляет в блокировку
  */
 async function blockCurrentIP() {
@@ -981,6 +1002,10 @@ async function blockCurrentIP() {
     const currentIP = data.ip;
     
     console.log('[SAF IP Blocker] Current IP:', currentIP);
+    
+    // Получаем информацию о стране
+    const countryInfo = await getCountryByIP(currentIP);
+    console.log('[SAF IP Blocker] Country info:', countryInfo);
     
     // Получаем список заблокированных IP
     chrome.storage.local.get(['blockedIPs'], (result) => {
@@ -1000,7 +1025,9 @@ async function blockCurrentIP() {
         ip: currentIP,
         date: new Date().toISOString(),
         reason: '3DS Challenge Auto-detected',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        country: countryInfo?.country || 'Unknown',
+        countryCode: countryInfo?.countryCode || '??'
       };
       
       blockedIPs.push(blockedEntry);
@@ -1008,7 +1035,8 @@ async function blockCurrentIP() {
       // Сохраняем в storage
       chrome.storage.local.set({ blockedIPs: blockedIPs }, () => {
         console.log('[SAF IP Blocker] ✅ IP blocked:', currentIP);
-        showNotification('🚫 IP blocked: ' + currentIP, 'error');
+        const countryFlag = countryInfo ? ` (${countryInfo.countryCode})` : '';
+        showNotification(`🚫 IP blocked: ${currentIP}${countryFlag}`, 'error');
         
         // Отправляем сообщение в background для синхронизации
         chrome.runtime.sendMessage({

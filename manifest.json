@@ -15,7 +15,12 @@
     "https://checkout.stripe.com/*",
     "https://stripe.com/*",
     "https://*.stripe.com/*",
-    "https://api.ipify.org/*"
+    "https://api.ipify.org/*",
+    "http://ip-api.com/*",
+    "https://cursor.com/*",
+    "https://*.cursor.com/*",
+    "https://authenticator.cursor.sh/*",
+    "https://*.cursor.sh/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -44,6 +49,17 @@
       "js": ["dataGenerator.js", "content.js"],
       "run_at": "document_idle",
       "all_frames": true
+    },
+    {
+      "matches": [
+        "https://cursor.com/*",
+        "https://*.cursor.com/*",
+        "https://authenticator.cursor.sh/*",
+        "https://*.cursor.sh/*"
+      ],
+      "js": ["cursorRegistration.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ]
 }

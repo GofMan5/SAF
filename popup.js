@@ -30,9 +30,15 @@ const currentIPElement = document.getElementById('currentIP');
 const ipStatusElement = document.getElementById('ipStatus');
 const refreshIPBtn = document.getElementById('refreshIPBtn');
 const blockedIPsList = document.getElementById('blockedIPsList');
+const blockedIPsCount = document.getElementById('blockedIPsCount');
+const clearAllIPsBtn = document.getElementById('clearAllIPsBtn');
 
 // Luhn validation checkbox
 const useLuhnValidation = document.getElementById('useLuhnValidation');
+
+// Cursor Registration elements
+const startCursorRegistrationBtn = document.getElementById('startCursorRegistrationBtn');
+const cursorStatusMessage = document.getElementById('cursorStatusMessage');
 
 const DEFAULT_BIN = '552461xxxxxxxxxx';
 
@@ -613,7 +619,30 @@ async function fetchCurrentIP() {
     const data = await response.json();
     currentIPAddress = data.ip;
     
+    // Отображаем IP
     currentIPElement.textContent = currentIPAddress;
+    
+    // Получаем информацию о стране
+    const countryInfo = await getCountryByIP(currentIPAddress);
+    console.log('[SAF IP Blocker] Country info for current IP:', countryInfo);
+    
+    // Отображаем страну в отдельном поле
+    const countryInfoItem = document.getElementById('countryInfoItem');
+    const countryNameElement = document.getElementById('countryName');
+    
+    if (countryInfo && countryInfo.country) {
+      if (countryNameElement) {
+        countryNameElement.textContent = `${countryInfo.country} (${countryInfo.countryCode})`;
+      }
+      if (countryInfoItem) {
+        countryInfoItem.style.display = 'flex';
+      }
+    } else {
+      if (countryInfoItem) {
+        countryInfoItem.style.display = 'none';
+      }
+    }
+    
     checkIPStatus();
     
     console.log('[SAF IP Blocker] Current IP fetched:', currentIPAddress);
@@ -647,9 +676,30 @@ function checkIPStatus() {
 }
 
 /**
+ * Получает информацию о стране по IP адресу
+ */
+async function getCountryByIP(ip) {
+  try {
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode`);
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      return {
+        country: data.country,
+        countryCode: data.countryCode
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('[SAF IP Blocker] Error fetching country info:', error);
+    return null;
+  }
+}
+
+/**
  * Добавляет IP в список блокировки
  */
-function addIPToBlocklist(ip, reason = 'Manual') {
+async function addIPToBlocklist(ip, reason = 'Manual') {
   if (!ip) {
     showToast('Enter IP address', 'error');
     return;
@@ -661,6 +711,10 @@ function addIPToBlocklist(ip, reason = 'Manual') {
     showToast('Invalid IP format', 'error');
     return;
   }
+  
+  // Получаем информацию о стране
+  const countryInfo = await getCountryByIP(ip);
+  console.log('[SAF IP Blocker] Country info:', countryInfo);
   
   chrome.storage.local.get(['blockedIPs'], (result) => {
     let blockedIPs = result.blockedIPs || [];
@@ -678,7 +732,9 @@ function addIPToBlocklist(ip, reason = 'Manual') {
       ip: ip,
       date: new Date().toISOString(),
       reason: reason,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      country: countryInfo?.country || 'Unknown',
+      countryCode: countryInfo?.countryCode || '??'
     };
     
     blockedIPs.push(blockedEntry);
@@ -720,6 +776,16 @@ function loadBlockedIPs() {
     const blockedIPs = result.blockedIPs || [];
     blockedIPsList.innerHTML = '';
     
+    // Обновляем счетчик
+    if (blockedIPsCount) {
+      blockedIPsCount.textContent = blockedIPs.length;
+    }
+    
+    // Показываем/скрываем кнопку очистки
+    if (clearAllIPsBtn) {
+      clearAllIPsBtn.style.display = blockedIPs.length > 0 ? 'flex' : 'none';
+    }
+    
     if (blockedIPs.length === 0) {
       blockedIPsList.innerHTML = `<div class="empty">${t('ipBlocker.noBlockedIPs')}</div>`;
       return;
@@ -739,16 +805,29 @@ function loadBlockedIPs() {
       ipAddress.className = 'blocked-ip-address';
       ipAddress.textContent = item.ip;
       
+      const ipMeta = document.createElement('div');
+      ipMeta.className = 'blocked-ip-meta';
+      
       const ipDate = document.createElement('div');
       ipDate.className = 'blocked-ip-date';
       ipDate.textContent = formatDate(item.date);
+      
+      // Добавляем страну если есть
+      if (item.country && item.country !== 'Unknown') {
+        const ipCountry = document.createElement('div');
+        ipCountry.className = 'blocked-ip-country';
+        ipCountry.innerHTML = `<span class="country-flag">🌍</span> ${item.country} (${item.countryCode})`;
+        ipMeta.appendChild(ipCountry);
+      }
+      
+      ipMeta.appendChild(ipDate);
       
       const ipReason = document.createElement('div');
       ipReason.className = 'blocked-ip-reason';
       ipReason.textContent = item.reason;
       
       ipInfo.appendChild(ipAddress);
-      ipInfo.appendChild(ipDate);
+      ipInfo.appendChild(ipMeta);
       ipInfo.appendChild(ipReason);
       
       const deleteBtn = document.createElement('button');
@@ -816,6 +895,49 @@ function formatDate(isoString) {
 }
 
 /**
+ * Мигрирует старые записи IP, добавляя информацию о стране
+ */
+async function migrateOldIPRecords() {
+  chrome.storage.local.get(['blockedIPs'], async (result) => {
+    let blockedIPs = result.blockedIPs || [];
+    let needsUpdate = false;
+    
+    // Проверяем каждую запись
+    for (let i = 0; i < blockedIPs.length; i++) {
+      const item = blockedIPs[i];
+      
+      // Если у записи нет информации о стране, получаем её
+      if (!item.country || !item.countryCode) {
+        console.log('[SAF IP Blocker] Updating country info for IP:', item.ip);
+        const countryInfo = await getCountryByIP(item.ip);
+        
+        if (countryInfo) {
+          blockedIPs[i].country = countryInfo.country;
+          blockedIPs[i].countryCode = countryInfo.countryCode;
+          needsUpdate = true;
+        } else {
+          // Устанавливаем значения по умолчанию если не удалось получить информацию
+          blockedIPs[i].country = 'Unknown';
+          blockedIPs[i].countryCode = '??';
+          needsUpdate = true;
+        }
+        
+        // Добавляем небольшую задержку чтобы не перегружать API
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    // Сохраняем обновлённые данные
+    if (needsUpdate) {
+      chrome.storage.local.set({ blockedIPs: blockedIPs }, () => {
+        console.log('[SAF IP Blocker] ✅ IP records migrated with country info');
+        loadBlockedIPs();
+      });
+    }
+  });
+}
+
+/**
  * Загружает все данные для IP Blocker
  */
 function loadIPBlockerData() {
@@ -823,6 +945,7 @@ function loadIPBlockerData() {
   if (currentIPElement || blockedIPsList) {
     fetchCurrentIP();
     loadBlockedIPs();
+    migrateOldIPRecords(); // Мигрируем старые записи
   }
 }
 
@@ -832,6 +955,59 @@ if (refreshIPBtn) {
     fetchCurrentIP();
     loadBlockedIPs();
     showToast(t('ipBlocker.ipDataRefreshed'));
+  });
+}
+
+// Обработчик для кнопки очистки всех IP
+if (clearAllIPsBtn) {
+  clearAllIPsBtn.addEventListener('click', () => {
+    chrome.storage.local.get(['blockedIPs'], (result) => {
+      const blockedIPs = result.blockedIPs || [];
+      const count = blockedIPs.length;
+      
+      if (count === 0) return;
+      
+      const lang = currentLang || 'en';
+      
+      // ПЕРВОЕ ПРЕДУПРЕЖДЕНИЕ
+      const firstWarningMessages = {
+        en: `⚠️ WARNING!\n\nYou are about to delete ALL ${count} blocked IP address${count > 1 ? 'es' : ''}.\n\nThis action cannot be undone!\n\nAre you sure you want to continue?`,
+        ru: `⚠️ ПРЕДУПРЕЖДЕНИЕ!\n\nВы собираетесь удалить ВСЕ ${count} заблокированных IP адрес${count > 1 ? (count > 4 ? 'ов' : 'а') : ''}.\n\nЭто действие нельзя отменить!\n\nВы уверены, что хотите продолжить?`
+      };
+      
+      const firstConfirm = confirm(firstWarningMessages[lang]);
+      
+      if (!firstConfirm) {
+        const cancelMsg = lang === 'ru' ? '❌ Действие отменено' : '❌ Action cancelled';
+        showToast(cancelMsg, 'info');
+        return;
+      }
+      
+      // ВТОРОЕ ПРЕДУПРЕЖДЕНИЕ (более строгое)
+      const secondWarningMessages = {
+        en: `🚨 FINAL WARNING! 🚨\n\nThis is your LAST CHANCE!\n\nYou will permanently delete ${count} IP address${count > 1 ? 'es' : ''} from the blocklist.\n\nClick OK ONLY if you are absolutely sure!`,
+        ru: `🚨 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ! 🚨\n\nЭто ваш ПОСЛЕДНИЙ ШАНС передумать!\n\nВы окончательно удалите ${count} IP адрес${count > 1 ? (count > 4 ? 'ов' : 'а') : ''} из списка блокировки.\n\nНажмите ОК ТОЛЬКО если вы абсолютно уверены!`
+      };
+      
+      const secondConfirm = confirm(secondWarningMessages[lang]);
+      
+      if (!secondConfirm) {
+        const cancelMsg = lang === 'ru' ? '❌ Действие отменено' : '❌ Action cancelled';
+        showToast(cancelMsg, 'info');
+        return;
+      }
+      
+      // Очищаем все IP
+      chrome.storage.local.set({ blockedIPs: [] }, () => {
+        console.log('[SAF IP Blocker] All IPs cleared');
+        const successMsg = lang === 'ru' 
+          ? `🗑️ Все ${count} IP адрес${count > 1 ? (count > 4 ? 'ов' : 'а') : ''} удалены` 
+          : `🗑️ All ${count} IP address${count > 1 ? 'es' : ''} deleted`;
+        showToast(successMsg, 'success');
+        loadBlockedIPs();
+        checkIPStatus();
+      });
+    });
   });
 }
 
@@ -847,6 +1023,114 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 console.log('[SAF IP Blocker] Popup initialized ✅');
+
+// ========================
+// Cursor Registration Management
+// ========================
+// TEMPORARILY DISABLED - IN DEVELOPMENT
+
+/*
+if (startCursorRegistrationBtn) {
+  startCursorRegistrationBtn.addEventListener('click', async () => {
+    startCursorRegistrationBtn.disabled = true;
+    startCursorRegistrationBtn.innerHTML = '<span class="btn-icon">⏳</span><span>Processing...</span>';
+    
+    if (cursorStatusMessage) {
+      cursorStatusMessage.textContent = '🔄 Opening Cursor dashboard...';
+      cursorStatusMessage.style.display = 'block';
+      cursorStatusMessage.className = 'status-message loading';
+    }
+    
+    try {
+      // Сразу открываем dashboard Cursor в новой вкладке
+      chrome.tabs.create({ url: 'https://cursor.com/dashboard' }, (tab) => {
+        if (chrome.runtime.lastError) {
+          startCursorRegistrationBtn.disabled = false;
+          startCursorRegistrationBtn.innerHTML = '<span class="btn-icon">🚀</span><span>Start Registration</span>';
+          if (cursorStatusMessage) {
+            cursorStatusMessage.textContent = '❌ Error: ' + chrome.runtime.lastError.message;
+            cursorStatusMessage.className = 'status-message error';
+          }
+          return;
+        }
+        
+        console.log('[SAF] Created tab:', tab.id);
+        
+        if (cursorStatusMessage) {
+          cursorStatusMessage.textContent = '⏳ Waiting for page to load...';
+          cursorStatusMessage.className = 'status-message loading';
+        }
+        
+        // Создаем listener для отслеживания загрузки страницы
+        const listener = (tabId, changeInfo, updatedTab) => {
+          console.log('[SAF] Tab update:', tabId, changeInfo.status);
+          
+          // Проверяем что это наша вкладка и страница полностью загружена
+          if (tabId === tab.id && changeInfo.status === 'complete') {
+            console.log('[SAF] Page loaded completely, starting registration...');
+            
+            // Удаляем listener
+            chrome.tabs.onUpdated.removeListener(listener);
+            
+            if (cursorStatusMessage) {
+              cursorStatusMessage.textContent = '✅ Page loaded! Starting registration...';
+              cursorStatusMessage.className = 'status-message loading';
+            }
+            
+            // Дополнительная задержка для инициализации content script
+            setTimeout(() => {
+              chrome.tabs.sendMessage(tab.id, { action: 'startCursorRegistration' }, (response) => {
+                startCursorRegistrationBtn.disabled = false;
+                startCursorRegistrationBtn.innerHTML = '<span class="btn-icon">🚀</span><span>Start Registration</span>';
+                
+                if (chrome.runtime.lastError) {
+                  console.error('[SAF] Message error:', chrome.runtime.lastError);
+                  if (cursorStatusMessage) {
+                    cursorStatusMessage.textContent = '⚠️ Registration started (check the tab)';
+                    cursorStatusMessage.className = 'status-message warning';
+                  }
+                } else if (response && response.success) {
+                  console.log('[SAF] Registration started successfully');
+                  if (cursorStatusMessage) {
+                    cursorStatusMessage.textContent = '✅ Registration started successfully!';
+                    cursorStatusMessage.className = 'status-message success';
+                  }
+                  showToast('Cursor registration started!');
+                } else {
+                  console.warn('[SAF] Unexpected response:', response);
+                }
+              });
+            }, 2000); // Ждем еще 2 секунды для инициализации
+          }
+        };
+        
+        // Добавляем listener
+        chrome.tabs.onUpdated.addListener(listener);
+        
+        // Таймаут на случай если страница не загрузится
+        setTimeout(() => {
+          chrome.tabs.onUpdated.removeListener(listener);
+          if (startCursorRegistrationBtn.disabled) {
+            startCursorRegistrationBtn.disabled = false;
+            startCursorRegistrationBtn.innerHTML = '<span class="btn-icon">🚀</span><span>Start Registration</span>';
+            if (cursorStatusMessage) {
+              cursorStatusMessage.textContent = '⚠️ Timeout - please try manually on the opened tab';
+              cursorStatusMessage.className = 'status-message warning';
+            }
+          }
+        }, 15000); // Максимум 15 секунд ожидания
+      });
+    } catch (error) {
+      startCursorRegistrationBtn.disabled = false;
+      startCursorRegistrationBtn.innerHTML = '<span class="btn-icon">🚀</span><span>Start Registration</span>';
+      if (cursorStatusMessage) {
+        cursorStatusMessage.textContent = '❌ Error: ' + error.message;
+        cursorStatusMessage.className = 'status-message error';
+      }
+    }
+  });
+}
+*/
 
 // ========================
 // Theme & Language Management

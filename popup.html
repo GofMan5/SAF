@@ -49,7 +49,7 @@
       <div class="header-center">
         <div class="logo">💳</div>
         <h2>SAF</h2>
-        <div class="version">v1.2</div>
+        <div class="version">v1.3</div>
       </div>
       <div class="header-right"></div>
     </div>
@@ -157,10 +157,27 @@
         
         <!-- Cursor AI SubTab -->
         <div id="cursor-subtab" class="sub-tab-content">
-          <div class="coming-soon-container">
-            <div class="coming-soon-icon">🤖</div>
-            <div class="coming-soon-title">Cursor AI Autofill</div>
-            <div class="coming-soon-subtitle" id="cursorStatus">In Development</div>
+          <div class="section" style="opacity: 0.6; pointer-events: none; position: relative;">
+            <div class="section-header">
+              <span class="section-icon">🤖</span>
+              <h3>Cursor AI Registration</h3>
+              <span class="dev-badge">🚧 In Development</span>
+            </div>
+            
+            <div class="info-message" style="margin-bottom: 1rem;">
+              <span style="font-size: 18px;">⚠️</span>
+              <div>
+                <strong>Feature in Development</strong>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted);">This functionality is currently being developed and will be available soon.</p>
+              </div>
+            </div>
+            
+            <button id="startCursorRegistrationBtn" class="btn btn-primary" disabled>
+              <span class="btn-icon">🚀</span>
+              <span>Start Registration</span>
+            </button>
+            
+            <div id="cursorStatusMessage" class="status-message" style="margin-top: 1rem;"></div>
           </div>
         </div>
       </div>
@@ -178,6 +195,13 @@
               <span class="ip-label">Current IP:</span>
               <span id="currentIP" class="ip-value">Loading...</span>
             </div>
+            <div class="ip-info-item" id="countryInfoItem" style="display: none;">
+              <span class="ip-label">Country:</span>
+              <span id="currentCountry" class="ip-country">
+                <span class="country-flag">🌍</span>
+                <span id="countryName">Unknown</span>
+              </span>
+            </div>
             <div class="ip-info-item">
               <span class="ip-label">Status:</span>
               <span id="ipStatus" class="ip-status">Not tracked</span>
@@ -193,8 +217,12 @@
         <div class="section">
           <div class="section-header">
             <span class="section-icon">📜</span>
-            <h3>Blocked IPs</h3>
+            <h3>Blocked IPs <span id="blockedIPsCount" class="count-badge">0</span></h3>
           </div>
+          <button id="clearAllIPsBtn" class="btn btn-danger" style="margin-bottom: 12px; display: none;">
+            <span class="btn-icon">🗑️</span>
+            <span data-i18n="ipBlocker.clearAllIPs">Clear All IPs</span>
+          </button>
           <div id="blockedIPsList" class="list-container-compact"></div>
         </div>
       </div>

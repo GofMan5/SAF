@@ -478,6 +478,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+  
+  if (request.action === 'openCursorIncognito') {
+    // Открываем Cursor.com
+    // ВАЖНО: Chrome API не позволяет программно открывать инкогнито вкладки
+    // Пользователь должен сам открыть инкогнито режим
+    chrome.tabs.create({
+      url: 'https://cursor.com/',
+      active: true
+    }, (tab) => {
+      console.log('[SAF Cursor] Opened cursor.com in tab:', tab.id);
+      sendResponse({ success: true, tabId: tab.id });
+    });
+    return true;
+  }
 });
 
 /**

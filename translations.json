@@ -2,7 +2,7 @@
   "en": {
     "header": {
       "title": "SAF",
-      "version": "v1.2"
+      "version": "v1.3"
     },
     "tabs": {
       "general": "General",
@@ -57,7 +57,8 @@
       "failedToFetch": "Failed to fetch IP address",
       "errorFetchingIP": "Error fetching IP: {error}",
       "ipDataRefreshed": "IP data refreshed",
-      "reason3DS": "3DS Challenge Auto-detected"
+      "reason3DS": "3DS Challenge Auto-detected",
+      "clearAllIPs": "Clear All IPs"
     },
     "settings": {
       "stripeSettings": "Stripe Settings",
@@ -104,7 +105,7 @@
   "ru": {
     "header": {
       "title": "SAF",
-      "version": "v1.2"
+      "version": "v1.3"
     },
     "tabs": {
       "general": "Общие",
@@ -159,7 +160,8 @@
       "failedToFetch": "Не удалось получить IP адрес",
       "errorFetchingIP": "Ошибка получения IP: {error}",
       "ipDataRefreshed": "Данные IP обновлены",
-      "reason3DS": "3DS Challenge автоопределение"
+      "reason3DS": "3DS Challenge автоопределение",
+      "clearAllIPs": "Очистить все IP"
     },
     "settings": {
       "stripeSettings": "Настройки Stripe",
